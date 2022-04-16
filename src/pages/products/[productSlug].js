@@ -36,7 +36,16 @@ export default function Product({ product }) {
             />
             <p className={styles.productPrice}>${product.price}</p>
             <p className={styles.productBuy}>
-              <Button>Add to Cart</Button>
+              <Button
+                className="snipcart-add-item"
+                data-item-id={product.id}
+                data-item-price={product.price}
+                data-item-url={`/products/${product.slug}`}
+                data-item-image={product.image.url}
+                data-item-name={product.name}
+              >
+                Add to Cart
+              </Button>
             </p>
           </div>
         </div>
@@ -61,6 +70,7 @@ export async function getStaticProps({ params }) {
           description {
             html
           }
+          slug
         }
       }
     `,
