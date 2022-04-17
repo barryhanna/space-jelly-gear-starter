@@ -98,8 +98,8 @@ export async function getStaticProps() {
           heroBackground
         }
 
-        products(first: 4) {
-          price
+        products(where: { categories_some: { slug: "featured" } }) {
+          id
           name
           slug
           image
