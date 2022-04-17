@@ -1,13 +1,15 @@
-import Head from 'next/head'
+import Head from 'next/head';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import Layout from '@components/Layout';
 import Container from '@components/Container';
 import Button from '@components/Button';
+import Map from '@components/Map';
 
-import styles from '@styles/Page.module.scss'
+import styles from '@styles/Page.module.scss';
+import { Marker, Popup, TileLayer } from 'react-leaflet';
 
-export default function Stores() {
+export default function Stores({ storeLocations }) {
   return (
     <Layout>
       <Head>
@@ -19,41 +21,98 @@ export default function Stores() {
         <h1>Locations</h1>
 
         <div className={styles.stores}>
-
           <div className={styles.storesLocations}>
             <ul className={styles.locations}>
-              <li>
-                <p className={styles.locationName}>
-                  Name
-                </p>
-                <address>
-                  Address
-                </address>
-                <p>
-                  1234567890
-                </p>
-                <p className={styles.locationDiscovery}>
-                  <button>
-                    View on Map
-                  </button>
-                  <a href="https://www.google.com/maps/" target="_blank" rel="noreferrer">
-                    Get Directions
-                    <FaExternalLinkAlt />
-                  </a>
-                </p>
-              </li>
+              {storeLocations.map((store) => (
+                <li key={store.id}>
+                  <p className={styles.locationName}>{store.name}</p>
+                  <address>{store.address}</address>
+                  <p>{store.phoneNumber}</p>
+                  <p className={styles.locationDiscovery}>
+                    <button>View on Map</button>
+                    <a
+                      href={`https://www.google.com/maps/dir//{store.location.latitude},${store.location.longitude}/@${store.location.latitude},${store.location.longitude},12z/`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Get Directions
+                      <FaExternalLinkAlt />
+                    </a>
+                  </p>
+                </li>
+              ))}
             </ul>
           </div>
 
           <div className={styles.storesMap}>
             <div className={styles.storesMapContainer}>
-              <div className={styles.map}>
-                Map
-              </div>
+              <Map
+                className={styles.map}
+                center={[0, 0]}
+                zoom={4}
+                scrollWheelZoom={false}
+              >
+                {({ TileLayer, Marker, Popup }, map) => {
+                  return (
+                    <>
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      {storeLocations.map((location) => {
+                        const { latitude, longitude } = location.location;
+                        return (
+                          <Marker
+                            key={location.id}
+                            position={[latitude, longitude]}
+                          >
+                            <Popup>
+                              <p>{location.name}</p>
+                              <p>{location.address}</p>
+                            </Popup>
+                          </Marker>
+                        );
+                      })}
+                    </>
+                  );
+                }}
+              </Map>
             </div>
           </div>
         </div>
       </Container>
     </Layout>
-  )
+  );
+}
+
+export async function getStaticProps() {
+  const client = new ApolloClient({
+    uri: 'https://api-eu-west-2.graphcms.com/v2/cl1yrr2s21pbz01xtadvjewog/master',
+    cache: new InMemoryCache(),
+  });
+
+  const data = await client.query({
+    query: gql`
+      query PageStores {
+        storeLocations {
+          name
+          id
+          phoneNumber
+          address
+          location {
+            latitude
+            longitude
+          }
+        }
+      }
+    `,
+  });
+
+  const storeLocations = data.data.storeLocations;
+
+  return {
+    props: {
+      storeLocations,
+    },
+  };
 }
